@@ -1,0 +1,254 @@
+openapi: 3.0.2
+
+info:
+  title: Sirna API
+  description: Api for sirna application
+  version: 1.0.0
+
+paths:
+  /sirnas:
+    post:
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Sirna'
+      responses:
+        200:
+          $ref: '#/components/responses/Sirna'
+      x-amazon-apigateway-integration:
+        description: Add a new sirna to the database
+        credentials: { 'Fn::GetAtt': APIRole.Arn }
+        uri:
+          {
+            'Fn::Sub': 'arn:aws:apigateway:${AWS::Region}:dynamodb:action/PutItem',
+          }
+        requestTemplates:
+          application/json:
+            Fn::Sub:
+              - |-
+                { 
+                  "TableName": "${tableName}",
+                  "Item": {
+                    "id": {
+                      "S": "$context.requestId"
+                    },
+                    "sequence": {
+                      "S": "$input.path("$.sequence")"
+                    },
+                    "length": {
+                      "N": "$input.path("$.length")"
+                    },
+                    "efficacy_score": {
+                      "N": "$input.path("$.efficacy_score")"  
+                    },
+                    "shared_transcripts": {
+                      "S": "$input.path("$.shared_transcripts")"  
+                    }
+                  }
+                }
+              - { tableName: { Ref: SirnasTable } }
+        responses:
+          default:
+            statusCode: 200
+            responseTemplates:
+              application/json: '#set($inputRoot = $input.path("$"))
+                {
+                "id": "$context.requestId"
+                }'
+        passthroughBehavior: 'when_no_match'
+        httpMethod: POST
+        type: AWS
+
+    get:
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        200:
+          $ref: '#/components/responses/Sirna'
+      x-amazon-apigateway-integration:
+        description: Retrieve all sirnas in the database
+        credentials: { 'Fn::GetAtt': APIRole.Arn }
+        uri:
+          {
+            'Fn::Sub': 'arn:aws:apigateway:${AWS::Region}:dynamodb:action/Scan',
+          }
+        requestTemplates:
+          application/json:
+            Fn::Sub:
+              - |-
+                {
+                  "TableName": "${tableName}"
+                }
+              - { tableName: { Ref: SirnasTable } }
+        responses:
+          default:
+            statusCode: 200
+            responseTemplates:
+              application/json: '#set($inputRoot = $input.path("$"))
+                {
+                "sirnas": [
+                #foreach($elem in $inputRoot.Items) {
+                "id": "$elem.id.S",
+                "sequence": "$elem.sequence.S",
+                "length": "$elem.length.N",
+                "efficacy_score": "$elem.efficacy_score.N",
+                "shared_transcripts": "$elem.shared_transcripts.S"
+                }#if($foreach.hasNext),#end
+                #end
+                ]
+                }'
+        passthroughBehavior: 'when_no_match'
+        httpMethod: POST
+        type: AWS
+
+  /sirnas/{sirnaId}:
+    get:
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      parameters:
+        - name: 'sirnaId'
+          in: 'path'
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          $ref: '#/components/responses/Sirna'
+      x-amazon-apigateway-integration:
+        description: Retrieve a specific sirna from the database
+        credentials: { 'Fn::GetAtt': APIRole.Arn }
+        uri:
+          {
+            'Fn::Sub': 'arn:aws:apigateway:${AWS::Region}:dynamodb:action/GetItem',
+          }
+        requestTemplates:
+          application/json:
+            Fn::Sub:
+              - |-
+                { 
+                  "TableName": "${tableName}",
+                  "Key": {
+                          "id": {
+                            "S": "$input.params("sirnaId")"
+                          }
+                        }
+                }
+              - { tableName: { Ref: SirnasTable } }
+        responses:
+          default:
+            statusCode: 200
+            responseTemplates:
+              application/json: '#set($inputRoot = $input.path("$"))
+                {
+                "id": "$elem.id.S",
+                "sequence": "$elem.sequence.S",
+                "length": "$elem.length.N",
+                "efficacy_score": "$elem.efficacy_score.N",
+                "shared_transcripts": "$elem.shared_transcripts.S"
+                }'
+        passthroughBehavior: 'when_no_match'
+        httpMethod: POST
+        type: AWS
+
+    delete:
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      parameters:
+        - name: 'sirnaId'
+          in: 'path'
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                '$ref': '#/components/responses/Sirna'
+      x-amazon-apigateway-integration:
+        description: Delete a specific sirna from the database
+        credentials: { 'Fn::GetAtt': APIRole.Arn }
+        uri:
+          {
+            'Fn::Sub': 'arn:aws:apigateway:${AWS::Region}:dynamodb:action/DeleteItem',
+          }
+        requestTemplates:
+          application/json:
+            Fn::Sub:
+              - |-
+                {
+                  "TableName": "${tableName}",
+                    "Key": {
+                      "id": {
+                        "S": "$input.params("sirnaId")"
+                      }
+                    },
+                  "ReturnValues": "ALL_OLD"
+                }
+              - { tableName: { Ref: SirnasTable } }
+        responses:
+          default:
+            statusCode: 200
+            responseTemplates:
+              application/json: '#set($inputRoot = $input.path("$"))
+                {
+                "deleted" : {
+                "id": "$elem.id.S",
+                "sequence": "$elem.sequence.S",
+                "length": "$elem.length.N",
+                "efficacy_score": "$elem.efficacy_score.N",
+                "shared_transcripts": "$elem.shared_transcripts.S"
+                }
+                }'
+        passthroughBehavior: 'when_no_match'
+        httpMethod: POST
+        type: AWS
+
+components:
+  schemas:
+    Empty:
+      type: object
+      description: Empty Schema
+    Sirna:
+      type: object
+      description: Sirna
+      properties:
+        id:
+          type: string
+        sequence:
+          type: string
+        length:
+          type: number
+        efficacy_score:
+          type: number
+        shared_transcripts:
+          type: string
+  responses:
+    Sirna:
+      description: Sirna
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              id:
+                type: string
+              sequence:
+                type: string
+              length:
+                type: number
+              efficacy_score:
+                type: number
+              shared_transcripts:
+                type: string

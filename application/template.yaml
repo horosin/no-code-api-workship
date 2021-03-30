@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+
+Description: >-
+  Creates API Gateway and sets up a dynamodb
+
+Parameters:
+  Stage:
+    Type: String
+    Default: prod
+
+Resources:
+  SirnasTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: sirnas
+      AttributeDefinitions:
+        - AttributeName: transcript_id
+          AttributeType: S
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: transcript_id
+          KeyType: HASH
+        - AttributeName: id
+          KeyType: RANGE
+      StreamSpecification:
+        StreamViewType: 'NEW_AND_OLD_IMAGES'
+      BillingMode: PAY_PER_REQUEST
+
+  APIRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: APIPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:PutItem'
+                  - 'dynamodb:UpdateItem'
+                  - 'dynamodb:DeleteItem'
+                  - 'dynamodb:GetItem'
+                  - 'dynamodb:Scan'
+                Resource: !GetAtt SirnasTable.Arn
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Stage
+      OpenApiVersion: 3.0.2
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: openapi.yaml
+
+Outputs:
+  Url:
+    Description: Endpoint URL
+    Value: !Sub https://${Api}.execute-api.${AWS::Region}.amazonaws.com/${Stage}
