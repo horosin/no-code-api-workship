@@ -3,6 +3,10 @@ region := "eu-central-1"
 stackname := "sirna-api"
 bucket := ${stackname}"-deployment-bucket"
 
+update: lint package deploy geturl
+
+all: remove update
+
 .PHONY: lint geturl
 
 lint:

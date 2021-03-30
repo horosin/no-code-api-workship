@@ -37,6 +37,9 @@ paths:
                     "id": {
                       "S": "$context.requestId"
                     },
+                    "transcript_id": {
+                      "S": "$input.path("$.transcript_id")"
+                    },
                     "sequence": {
                       "S": "$input.path("$.sequence")"
                     },
@@ -53,6 +56,13 @@ paths:
                 }
               - { tableName: { Ref: SirnasTable } }
         responses:
+          '400':
+            statusCode: 400
+            responseTemplates:
+              application/json: '#set($inputRoot = $input.path("$"))
+                {
+                "error": "$inputRoot"
+                }'
           default:
             statusCode: 200
             responseTemplates:

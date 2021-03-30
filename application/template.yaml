@@ -53,11 +53,38 @@ Resources:
                   - 'dynamodb:GetItem'
                   - 'dynamodb:Scan'
                 Resource: !GetAtt SirnasTable.Arn
+
+  ApiGwAccountConfig:
+    Type: 'AWS::ApiGateway::Account'
+    Properties:
+      CloudWatchRoleArn: !GetAtt 'ApiGatewayLoggingRole.Arn'
+
+  ApiGatewayLoggingRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - 'apigateway.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      Path: '/'
+      ManagedPolicyArns:
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs'
+
   Api:
     Type: AWS::Serverless::Api
     Properties:
       StageName: !Ref Stage
       OpenApiVersion: 3.0.2
+      MethodSettings:
+        - LoggingLevel: INFO # ERROR/INFO level logging
+          ResourcePath: '/*' # allows for logging on any resource
+          HttpMethod: '*' # allows for logging on any method
+          DataTraceEnabled: true # enabling Log full requests/responses data in console
+          MetricsEnabled: true # Enable detailed metrics (error 404, latence, ...)
       DefinitionBody:
         Fn::Transform:
           Name: AWS::Include
