@@ -1,8 +1,16 @@
 # No code REST APIs on AWS
 
+
+## Slides
+
+[pdf here](slides.pdf)
+
+
 ## Dependencies
+
 - AWS CLI set configured
 - pip install cfn-lint
+
 
 ## Resources
 
