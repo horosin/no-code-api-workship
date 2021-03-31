@@ -106,6 +106,7 @@ paths:
                 "sirnas": [
                 #foreach($elem in $inputRoot.Items) {
                 "id": "$elem.id.S",
+                "transcript_id": "$elem.transcript_id.S",
                 "sequence": "$elem.sequence.S",
                 "length": "$elem.length.N",
                 "efficacy_score": "$elem.efficacy_score.N",
@@ -159,11 +160,12 @@ paths:
             responseTemplates:
               application/json: '#set($inputRoot = $input.path("$"))
                 {
-                "id": "$elem.id.S",
-                "sequence": "$elem.sequence.S",
-                "length": "$elem.length.N",
-                "efficacy_score": "$elem.efficacy_score.N",
-                "shared_transcripts": "$elem.shared_transcripts.S"
+                "id": "$inputRoot.Item.id.S",
+                "transcript_id": "$inputRoot.Item.transcript_id.S",
+                "sequence": "$inputRoot.Item.sequence.S",
+                "length": "$inputRoot.Item.length.N",
+                "efficacy_score": "$inputRoot.Item.efficacy_score.N",
+                "shared_transcripts": "$inputRoot.Item.shared_transcripts.S"
                 }'
         passthroughBehavior: 'when_no_match'
         httpMethod: POST
@@ -201,7 +203,7 @@ paths:
                   "TableName": "${tableName}",
                     "Key": {
                       "id": {
-                        "S": "$input.params("sirnaId")"
+                        "S": "$input.params('sirnaId')"
                       }
                     },
                   "ReturnValues": "ALL_OLD"
@@ -214,12 +216,68 @@ paths:
               application/json: '#set($inputRoot = $input.path("$"))
                 {
                 "deleted" : {
-                "id": "$elem.id.S",
-                "sequence": "$elem.sequence.S",
-                "length": "$elem.length.N",
-                "efficacy_score": "$elem.efficacy_score.N",
-                "shared_transcripts": "$elem.shared_transcripts.S"
+                "id": "$inputRoot.Attributes.id.S",
+                "transcript_id": "$inputRoot.Attributes.transcript_id.S",
+                "sequence": "$inputRoot.Attributes.sequence.S",
+                "length": "$inputRoot.Attributes.length.N",
+                "efficacy_score": "$inputRoot.Attributes.efficacy_score.N",
+                "shared_transcripts": "$inputRoot.Attributes.shared_transcripts.S"
                 }
+                }'
+        passthroughBehavior: 'when_no_match'
+        httpMethod: POST
+        type: AWS
+
+  /transcripts/{transcriptId}/sirnas:
+    get:
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      parameters:
+        - name: 'transcriptId'
+          in: 'path'
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          $ref: '#/components/responses/Sirna'
+      x-amazon-apigateway-integration:
+        description: Retrieve a specific sirna from the database
+        credentials: { 'Fn::GetAtt': APIRole.Arn }
+        uri:
+          {
+            'Fn::Sub': 'arn:aws:apigateway:${AWS::Region}:dynamodb:action/Query',
+          }
+        requestTemplates:
+          application/json:
+            Fn::Sub:
+              - |-
+                { 
+                  "TableName": "${tableName}",
+                  "IndexName": "TranscriptIdIndex",
+                  "KeyConditionExpression": "transcript_id = :transcriptId",
+                  "ExpressionAttributeValues": {
+                          ":transcriptId": {
+                            "S": "$input.params('transcriptId')"
+                          }
+                        }
+                }
+              - { tableName: { Ref: SirnasTable } }
+        responses:
+          default:
+            statusCode: 200
+            responseTemplates:
+              application/json: '#set($inputRoot = $input.path("$"))
+                {
+                "sirnas": [
+                #foreach($elem in $inputRoot.Items) {
+                "id": "$elem.id.S",
+                "transcript_id": "$elem.transcript_id.S"
+                }#if($foreach.hasNext),#end
+                #end
+                ]
                 }'
         passthroughBehavior: 'when_no_match'
         httpMethod: POST
@@ -235,6 +293,8 @@ components:
       description: Sirna
       properties:
         id:
+          type: string
+        transcript_id:
           type: string
         sequence:
           type: string
@@ -253,6 +313,8 @@ components:
             type: object
             properties:
               id:
+                type: string
+              transcript_id:
                 type: string
               sequence:
                 type: string
