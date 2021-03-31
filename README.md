@@ -1,5 +1,6 @@
 # No code REST APIs on AWS
 
+A workshop about creating APIs with just API Gateway and DynamoDB. Contains well-rounded functional example
 
 ## Slides
 
@@ -11,6 +12,9 @@
 - AWS CLI set configured
 - pip install cfn-lint
 
+## Deploy
+
+See [makefile](Makefile)
 
 ## Resources
 
