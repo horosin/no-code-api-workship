@@ -142,10 +142,21 @@ img {
 
 ---
 
-# Architecture
+# Typical architecture
 
-![](architecture.jpeg)
+![](architecture1.png)
 
+---
+
+# This architecture
+
+![](architecture2.png)
+
+---
+
+# Applied architecture
+
+![](architecture3.png)
 
 ---
 
