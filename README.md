@@ -4,7 +4,7 @@ A workshop about creating APIs with just API Gateway and DynamoDB. Contains well
 
 ## Slides
 
-[pdf here](slides.pdf)
+[pdf here](slides/slides.pdf)
 
 
 ## Dependencies
